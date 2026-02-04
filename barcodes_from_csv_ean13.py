@@ -3,6 +3,36 @@ import csv
 from pathlib import Path
 
 
+def clean_digits(value: str) -> str:
+    s = "" if value is None else str(value).strip()
+    return "".join(ch for ch in s if ch.isdigit())
+
+
+def ean13_check_digit(code12: str) -> int:
+    if len(code12) != 12 or not code12.isdigit():
+        raise ValueError("Para checksum se requieren exactamente 12 dígitos")
+
+    digits = [int(c) for c in code12]
+    odd_sum = sum(digits[0::2])
+    even_sum = sum(digits[1::2])
+    total = odd_sum + (even_sum * 3)
+    return (10 - (total % 10)) % 10
+
+
+def validate_ean13(code13: str) -> str:
+    if len(code13) != 13 or not code13.isdigit():
+        raise ValueError(f"EAN-13 inválido: se esperaban 13 dígitos, llegó: '{code13}'")
+
+    base12 = code13[:12]
+    expected = ean13_check_digit(base12)
+    actual = int(code13[-1])
+
+    if expected != actual:
+        raise ValueError(f"Checksum incorrecto: esperado {expected}, recibido {actual}")
+
+    return base12
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Genera códigos de barras EAN-13 (PNG) desde un CSV. El nombre del archivo sale de 'Clave SAT'."
@@ -37,14 +67,23 @@ def main():
             )
 
         for line_no, row in enumerate(reader, start=2):
-            # Por ahora solo contamos filas válidas de estructura
-            generated += 1
+            clave_sat_raw = row.get("Clave SAT", "")
+            ean13_raw = row.get("EAN-13", "")
 
-    print(f"Listo. Filas leídas: {generated}")
+            try:
+                ean13_digits = clean_digits(ean13_raw)
+                _base12 = validate_ean13(ean13_digits)
+                generated += 1
+            except Exception as e:
+                errors.append((line_no, clave_sat_raw, ean13_raw, str(e)))
+
+
+    print(f"Listo. Filas válidas: {generated}")
     if errors:
-        print("\nErrores:")
-        for e in errors:
-            print(e)
+        print("\nErrores (línea CSV | Clave SAT | EAN-13 | motivo):")
+        for ln, clave_sat, ean, msg in errors:
+            print(f"- {ln} | {clave_sat} | {ean} | {msg}")
+
 
 
 if __name__ == "__main__":
