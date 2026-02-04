@@ -3,6 +3,34 @@ import csv
 from pathlib import Path
 
 
+WINDOWS_FORBIDDEN = '<>:"\\|?*'
+
+
+def sanitize_filename(name: str) -> str:
+    s = "" if name is None else str(name).strip()
+    s = s.replace("/", "_")
+    for ch in WINDOWS_FORBIDDEN:
+        s = s.replace(ch, "")
+    s = s.strip()
+    if not s:
+        s = "SIN_CLAVE"
+    while s.endswith(".") or s.endswith(" "):
+        s = s[:-1]
+    return s
+
+
+def unique_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+    stem, suffix = path.stem, path.suffix
+    i = 2
+    while True:
+        candidate = path.with_name(f"{stem}_{i}{suffix}")
+        if not candidate.exists():
+            return candidate
+        i += 1
+
+
 def clean_digits(value: str) -> str:
     s = "" if value is None else str(value).strip()
     return "".join(ch for ch in s if ch.isdigit())
@@ -41,6 +69,8 @@ def main():
     parser.add_argument("--outdir", default="salida", help="Carpeta de salida (default: salida)")
     parser.add_argument("--delimiter", default=None, help="Delimitador del CSV (ej: ',' o '|' ). Si se omite, se intenta detectar.")
     parser.add_argument("--encoding", default="utf-8-sig", help="Encoding (default: utf-8-sig)")
+    parser.add_argument("--overwrite", action="store_true", help="Sobrescribir si el PNG ya existe (si no, crea _2, _3...)")
+
     args = parser.parse_args()
 
     csv_path = Path(args.csv)
@@ -71,8 +101,14 @@ def main():
             ean13_raw = row.get("EAN-13", "")
 
             try:
+                clave_sat = sanitize_filename(clave_sat_raw)
                 ean13_digits = clean_digits(ean13_raw)
                 _base12 = validate_ean13(ean13_digits)
+
+                out_path = outdir / f"{clave_sat}.png"
+                if out_path.exists() and not args.overwrite:
+                    out_path = unique_path(out_path)
+
                 generated += 1
             except Exception as e:
                 errors.append((line_no, clave_sat_raw, ean13_raw, str(e)))
