@@ -80,7 +80,7 @@ def resize_and_pad_to_exact(src_png: Path, dst_png: Path, width: int, height: in
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Genera códigos de barras EAN-13 (PNG) desde un CSV. El nombre del archivo sale de 'Clave SAT'."
+        description="Genera códigos de barras EAN-13 (PNG) desde un CSV. El nombre del archivo sale de 'Clave'."
     )
     parser.add_argument("--csv", required=True, help="Ruta al archivo CSV")
     parser.add_argument("--outdir", default="salida", help="Carpeta de salida (default: salida)")
@@ -116,7 +116,7 @@ def main():
         sample = csv_path.read_text(encoding=args.encoding, errors="ignore")[:2048]
         delimiter = "|" if sample.count("|") > sample.count(",") else ","
 
-    required_cols = ["Clave SAT", "Secuencial", "EAN-13", "Descripción"]
+    required_cols = ["Clave", "Secuencial", "EAN-13", "Descripción"]
 
     generated = 0
     errors = []
@@ -131,15 +131,15 @@ def main():
             )
 
         for line_no, row in enumerate(reader, start=2):
-            clave_sat_raw = row.get("Clave SAT", "")
+            clave_raw = row.get("Clave", "")
             ean13_raw = row.get("EAN-13", "")
 
             try:
-                clave_sat = sanitize_filename(clave_sat_raw)
+                clave = sanitize_filename(clave_raw)
                 ean13_digits = clean_digits(ean13_raw)
                 _base12 = validate_ean13(ean13_digits)
 
-                out_path = outdir / f"{clave_sat}.png"
+                out_path = outdir / f"{clave}.png"
                 if out_path.exists() and not args.overwrite:
                     out_path = unique_path(out_path)
 
@@ -157,16 +157,16 @@ def main():
                     pass
 
                 generated += 1
-                
+
             except Exception as e:
-                errors.append((line_no, clave_sat_raw, ean13_raw, str(e)))
+                errors.append((line_no, clave_raw, ean13_raw, str(e)))
 
 
     print(f"Listo. Filas válidas: {generated}")
     if errors:
-        print("\nErrores (línea CSV | Clave SAT | EAN-13 | motivo):")
-        for ln, clave_sat, ean, msg in errors:
-            print(f"- {ln} | {clave_sat} | {ean} | {msg}")
+        print("\nErrores (línea CSV | Clave | EAN-13 | motivo):")
+        for ln, clave, ean, msg in errors:
+            print(f"- {ln} | {clave} | {ean} | {msg}")
 
 
 
