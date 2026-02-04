@@ -2,6 +2,10 @@ import argparse
 import csv
 from pathlib import Path
 
+from barcode import get_barcode_class
+from barcode.writer import ImageWriter
+from PIL import Image
+
 
 WINDOWS_FORBIDDEN = '<>:"\\|?*'
 
@@ -61,6 +65,19 @@ def validate_ean13(code13: str) -> str:
     return base12
 
 
+def resize_and_pad_to_exact(src_png: Path, dst_png: Path, width: int, height: int) -> None:
+    with Image.open(src_png) as im:
+        im = im.convert("RGB")
+        im.thumbnail((width, height), Image.Resampling.LANCZOS)
+
+        canvas = Image.new("RGB", (width, height), "white")
+        x = (width - im.size[0]) // 2
+        y = (height - im.size[1]) // 2
+        canvas.paste(im, (x, y))
+
+        canvas.save(dst_png, format="PNG", optimize=True)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Genera códigos de barras EAN-13 (PNG) desde un CSV. El nombre del archivo sale de 'Clave SAT'."
@@ -69,6 +86,9 @@ def main():
     parser.add_argument("--outdir", default="salida", help="Carpeta de salida (default: salida)")
     parser.add_argument("--delimiter", default=None, help="Delimitador del CSV (ej: ',' o '|' ). Si se omite, se intenta detectar.")
     parser.add_argument("--encoding", default="utf-8-sig", help="Encoding (default: utf-8-sig)")
+    parser.add_argument("--width", type=int, default=230, help="Ancho final en px (default: 230)")
+    parser.add_argument("--height", type=int, default=120, help="Alto final en px (default: 120)")
+    parser.add_argument("--no-text", action="store_true", help="No imprimir el número debajo del código")
     parser.add_argument("--overwrite", action="store_true", help="Sobrescribir si el PNG ya existe (si no, crea _2, _3...)")
 
     args = parser.parse_args()
@@ -76,6 +96,20 @@ def main():
     csv_path = Path(args.csv)
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
+
+    writer_options = {
+        "dpi": 300,
+        "write_text": not args.no_text,
+        "quiet_zone": 2.0,
+        "module_width": 0.25,
+        "module_height": 12.0,
+        "font_size": 10,
+        "text_distance": 2.0,
+        "background": "white",
+        "foreground": "black",
+    }
+
+    EAN13 = get_barcode_class("ean13")
 
     delimiter = args.delimiter
     if delimiter is None:
@@ -109,7 +143,21 @@ def main():
                 if out_path.exists() and not args.overwrite:
                     out_path = unique_path(out_path)
 
+                barcode_obj = EAN13(_base12, writer=ImageWriter())
+
+                tmp_base = outdir / f"__tmp__{ean13_digits}"
+                barcode_obj.save(str(tmp_base), options=writer_options)
+                tmp_png = Path(str(tmp_base) + ".png")
+
+                resize_and_pad_to_exact(tmp_png, out_path, args.width, args.height)
+
+                try:
+                    tmp_png.unlink(missing_ok=True)
+                except Exception:
+                    pass
+
                 generated += 1
+                
             except Exception as e:
                 errors.append((line_no, clave_sat_raw, ean13_raw, str(e)))
 
