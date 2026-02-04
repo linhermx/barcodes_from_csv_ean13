@@ -19,9 +19,9 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Outputs / data (ajusta a tu flujo)
+# Outputs
 salida/
 *.png
 
-# CSVs (si son datos internos)
+# CSVs
 *.csv
