@@ -86,8 +86,8 @@ def main():
     parser.add_argument("--outdir", default="salida", help="Carpeta de salida (default: salida)")
     parser.add_argument("--delimiter", default=None, help="Delimitador del CSV (ej: ',' o '|' ). Si se omite, se intenta detectar.")
     parser.add_argument("--encoding", default="utf-8-sig", help="Encoding (default: utf-8-sig)")
-    parser.add_argument("--width", type=int, default=230, help="Ancho final en px (default: 230)")
-    parser.add_argument("--height", type=int, default=120, help="Alto final en px (default: 120)")
+    parser.add_argument("--width", type=int, default=450, help="Ancho final en px (default: 450)")
+    parser.add_argument("--height", type=int, default=300, help="Alto final en px (default: 300)")
     parser.add_argument("--no-text", action="store_true", help="No imprimir el número debajo del código")
     parser.add_argument("--overwrite", action="store_true", help="Sobrescribir si el PNG ya existe (si no, crea _2, _3...)")
 
@@ -99,12 +99,19 @@ def main():
 
     writer_options = {
         "dpi": 300,
-        "write_text": not args.no_text,
-        "quiet_zone": 2.0,
-        "module_width": 0.25,
-        "module_height": 12.0,
-        "font_size": 10,
-        "text_distance": 2.0,
+
+        # Barras
+        "module_width": 0.60,
+        "module_height": 29.0,
+
+        # Márgenes
+        "quiet_zone": 0.9,
+
+        # Texto
+        "write_text": True,        
+        "font_size": 14,
+        "text_distance": 5.5,
+
         "background": "white",
         "foreground": "black",
     }
