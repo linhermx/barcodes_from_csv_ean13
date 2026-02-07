@@ -28,6 +28,9 @@ class RunResult:
     errors: List[RowError]
     delimiter: str
     outdir: Path
+    barcodes_dir: Path
+    log_file: Path
+    errors_csv: Path | None
 
 
 def sanitize_filename(name: str) -> str:
@@ -118,6 +121,13 @@ def generate_barcodes_from_csv(
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
+    barcodes_dir = outdir / "barcodes"
+    logs_dir = outdir / "logs"
+
+    barcodes_dir.mkdir(parents=True, exist_ok=True)
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+
     writer_options = {
         "dpi": 300,
 
@@ -163,13 +173,13 @@ def generate_barcodes_from_csv(
                 ean13_digits = clean_digits(ean13_raw)
                 base12 = validate_ean13(ean13_digits)
 
-                out_path = outdir / f"{clave}.png"
+                out_path = barcodes_dir / f"{clave}.png"
                 if out_path.exists() and not overwrite:
                     out_path = unique_path(out_path)
 
                 barcode_obj = EAN13(base12, writer=ImageWriter())
 
-                tmp_base = outdir / f"__tmp__{ean13_digits}"
+                tmp_base = barcodes_dir / f"__tmp__{ean13_digits}"
                 barcode_obj.save(str(tmp_base), options=writer_options)
                 tmp_png = Path(str(tmp_base) + ".png")
 
@@ -185,4 +195,32 @@ def generate_barcodes_from_csv(
             except Exception as e:
                 errors.append(RowError(line_no, str(clave_raw), str(ean13_raw), str(e)))
 
-    return RunResult(generated=generated, errors=errors, delimiter=delimiter, outdir=outdir)
+    # ---- Guardar log de ejecución ----
+    run_log = logs_dir / "run_log.txt"
+    with run_log.open("w", encoding="utf-8") as lf:
+        lf.write(f"CSV: {csv_path}\n")
+        lf.write(f"Salida: {outdir}\n")
+        lf.write(f"Delimitador: {delimiter}\n")
+        lf.write(f"Generados: {generated}\n")
+        lf.write(f"Errores: {len(errors)}\n\n")
+
+        if errors:
+            lf.write("Errores (line_no | Clave | EAN-13 | motivo):\n")
+            for e in errors:
+                lf.write(f"{e.line_no} | {e.clave} | {e.ean13} | {e.message}\n")
+
+    errors_csv = outdir / "errors.csv"
+
+    if errors:
+        with errors_csv.open("w", encoding="utf-8", newline="") as ef:
+            w = csv.writer(ef)
+            w.writerow(["line_no", "Clave", "EAN-13", "motivo"])
+            for e in errors:
+                w.writerow([e.line_no, e.clave, e.ean13, e.message])
+    else:
+        if errors_csv.exists():
+            try:
+                errors_csv.unlink()
+            except Exception:
+                pass
+    return RunResult(generated=generated, errors=errors, delimiter=delimiter, outdir=outdir, barcodes_dir=barcodes_dir, log_file=run_log, errors_csv=(errors_csv if errors else None))
