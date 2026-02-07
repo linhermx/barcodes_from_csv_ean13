@@ -1,81 +1,15 @@
 import argparse
-import csv
+import sys
 from pathlib import Path
 
-from barcode import get_barcode_class
-from barcode.writer import ImageWriter
-from PIL import Image
 
+# Importar desde /src sin configurar PYTHONPATH
+ROOT = Path(__file__).resolve().parent
+SRC = ROOT / "src"
+if SRC.exists() and str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
-WINDOWS_FORBIDDEN = '<>:"\\|?*'
-
-
-def sanitize_filename(name: str) -> str:
-    s = "" if name is None else str(name).strip()
-    s = s.replace("/", "_")
-    for ch in WINDOWS_FORBIDDEN:
-        s = s.replace(ch, "")
-    s = s.strip()
-    if not s:
-        s = "SIN_CLAVE"
-    while s.endswith(".") or s.endswith(" "):
-        s = s[:-1]
-    return s
-
-
-def unique_path(path: Path) -> Path:
-    if not path.exists():
-        return path
-    stem, suffix = path.stem, path.suffix
-    i = 2
-    while True:
-        candidate = path.with_name(f"{stem}_{i}{suffix}")
-        if not candidate.exists():
-            return candidate
-        i += 1
-
-
-def clean_digits(value: str) -> str:
-    s = "" if value is None else str(value).strip()
-    return "".join(ch for ch in s if ch.isdigit())
-
-
-def ean13_check_digit(code12: str) -> int:
-    if len(code12) != 12 or not code12.isdigit():
-        raise ValueError("Para checksum se requieren exactamente 12 dígitos")
-
-    digits = [int(c) for c in code12]
-    odd_sum = sum(digits[0::2])
-    even_sum = sum(digits[1::2])
-    total = odd_sum + (even_sum * 3)
-    return (10 - (total % 10)) % 10
-
-
-def validate_ean13(code13: str) -> str:
-    if len(code13) != 13 or not code13.isdigit():
-        raise ValueError(f"EAN-13 inválido: se esperaban 13 dígitos, llegó: '{code13}'")
-
-    base12 = code13[:12]
-    expected = ean13_check_digit(base12)
-    actual = int(code13[-1])
-
-    if expected != actual:
-        raise ValueError(f"Checksum incorrecto: esperado {expected}, recibido {actual}")
-
-    return base12
-
-
-def resize_and_pad_to_exact(src_png: Path, dst_png: Path, width: int, height: int) -> None:
-    with Image.open(src_png) as im:
-        im = im.convert("RGB")
-        im.thumbnail((width, height), Image.Resampling.LANCZOS)
-
-        canvas = Image.new("RGB", (width, height), "white")
-        x = (width - im.size[0]) // 2
-        y = (height - im.size[1]) // 2
-        canvas.paste(im, (x, y))
-
-        canvas.save(dst_png, format="PNG", optimize=True)
+from barcode_tool.core import generate_barcodes_from_csv
 
 
 def main():
@@ -93,88 +27,22 @@ def main():
 
     args = parser.parse_args()
 
-    csv_path = Path(args.csv)
-    outdir = Path(args.outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
+    result = generate_barcodes_from_csv(
+        csv_path=Path(args.csv),
+        outdir=Path(args.outdir),
+        delimiter=args.delimiter,
+        encoding=args.encoding,
+        width=args.width,
+        height=args.height,
+        no_text=args.no_text,
+        overwrite=args.overwrite,
+    )
 
-    writer_options = {
-        "dpi": 300,
-
-        # Barras
-        "module_width": 0.60,
-        "module_height": 29.0,
-
-        # Márgenes
-        "quiet_zone": 0.9,
-
-        # Texto
-        "write_text": True,        
-        "font_size": 14,
-        "text_distance": 5.5,
-
-        "background": "white",
-        "foreground": "black",
-    }
-
-    EAN13 = get_barcode_class("ean13")
-
-    delimiter = args.delimiter
-    if delimiter is None:
-        sample = csv_path.read_text(encoding=args.encoding, errors="ignore")[:2048]
-        delimiter = "|" if sample.count("|") > sample.count(",") else ","
-
-    required_cols = ["Clave", "Secuencial", "EAN-13", "Descripción"]
-
-    generated = 0
-    errors = []
-
-    with csv_path.open("r", encoding=args.encoding, newline="") as f:
-        reader = csv.DictReader(f, delimiter=delimiter)
-
-        missing = [c for c in required_cols if c not in (reader.fieldnames or [])]
-        if missing:
-            raise SystemExit(
-                f"Faltan columnas: {missing}\nColumnas encontradas: {reader.fieldnames}"
-            )
-
-        for line_no, row in enumerate(reader, start=2):
-            clave_raw = row.get("Clave", "")
-            ean13_raw = row.get("EAN-13", "")
-
-            try:
-                clave = sanitize_filename(clave_raw)
-                ean13_digits = clean_digits(ean13_raw)
-                _base12 = validate_ean13(ean13_digits)
-
-                out_path = outdir / f"{clave}.png"
-                if out_path.exists() and not args.overwrite:
-                    out_path = unique_path(out_path)
-
-                barcode_obj = EAN13(_base12, writer=ImageWriter())
-
-                tmp_base = outdir / f"__tmp__{ean13_digits}"
-                barcode_obj.save(str(tmp_base), options=writer_options)
-                tmp_png = Path(str(tmp_base) + ".png")
-
-                resize_and_pad_to_exact(tmp_png, out_path, args.width, args.height)
-
-                try:
-                    tmp_png.unlink(missing_ok=True)
-                except Exception:
-                    pass
-
-                generated += 1
-
-            except Exception as e:
-                errors.append((line_no, clave_raw, ean13_raw, str(e)))
-
-
-    print(f"Listo. Filas válidas: {generated}")
-    if errors:
+    print(f"Listo. Filas válidas: {result.generated}")
+    if result.errors:
         print("\nErrores (línea CSV | Clave | EAN-13 | motivo):")
-        for ln, clave, ean, msg in errors:
-            print(f"- {ln} | {clave} | {ean} | {msg}")
-
+        for e in result.errors:
+            print(f"- {e.line_no} | {e.clave} | {e.ean13} | {e.message}")
 
 
 if __name__ == "__main__":
