@@ -220,9 +220,9 @@ class BarcodeApp(tk.Tk):
                     overwrite=bool(self.overwrite_var.get()),
                     no_text=bool(self.no_text_var.get()),
                 )
-                self.after(0, lambda: self._on_success(result))
+                self.after(0, lambda r=result: self._on_success(r))
             except Exception as e:
-                self.after(0, lambda: self._on_error(e))
+                self.after(0, lambda e=e: self._on_error(e))
 
         threading.Thread(target=task, daemon=True).start()
 
