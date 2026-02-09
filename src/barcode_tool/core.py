@@ -139,9 +139,6 @@ def generate_barcodes_from_csv(
 
     font_file = resource_path("resources", "fonts", "DejaVuSans.ttf")
 
-    if not no_text and not font_file.exists():
-        raise RuntimeError(f"Font not found: {font_file}")
-
     writer_options = {
         "dpi": 300,
 
