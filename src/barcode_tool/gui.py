@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import subprocess
 import threading
 from pathlib import Path
 import tkinter as tk
@@ -22,6 +24,9 @@ class BarcodeApp(tk.Tk):
         self.width_var = tk.IntVar(value=450)
         self.height_var = tk.IntVar(value=300)
         self.status_var = tk.StringVar(value="Listo.")
+        self.last_output_dir: Path | None = None
+        self.last_barcodes_dir: Path | None = None
+
 
         self._apply_style()
         self._build_ui()
@@ -104,8 +109,15 @@ class BarcodeApp(tk.Tk):
         frm_actions.grid(row=5, column=0, sticky="ew", pady=(12, 6))
         frm_actions.columnconfigure(0, weight=1)
 
+        # Botón secundario: abrir carpeta (deshabilitado al inicio)
+        self.open_btn = ttk.Button(frm_actions, text="Abrir carpeta…", command=self.open_output, state="disabled")
+        self.open_btn.grid(row=0, column=0, sticky="w")
+
+        # Botón principal
         self.run_btn = ttk.Button(frm_actions, text="Generar", style="Primary.TButton", command=self.run)
         self.run_btn.grid(row=0, column=1, sticky="e")
+
+
 
         # ---------- Resultados ----------
         header_log = ttk.Label(root, text="Resultados", style="Title.TLabel")
@@ -154,6 +166,22 @@ class BarcodeApp(tk.Tk):
         self.log_box.see("end")
         self.log_box.configure(state="disabled")
 
+    def open_output(self):
+        # Abrimos la carpeta de barcodes si existe; si no, la raíz de salida
+        target = self.last_barcodes_dir or self.last_output_dir
+        if not target:
+            return
+
+        try:
+            # Windows: abrir en Explorer
+            os.startfile(str(target))  # type: ignore[attr-defined]
+        except Exception:
+            try:
+                # Fallback (por si cambia el entorno)
+                subprocess.run(["explorer", str(target)], check=False)
+            except Exception as e:
+                messagebox.showerror("No se pudo abrir la carpeta", str(e))
+
     def run(self):
         csv_p = self.csv_path.get().strip()
         out_d = self.out_dir.get().strip()
@@ -175,6 +203,10 @@ class BarcodeApp(tk.Tk):
             return
 
         self.run_btn.configure(state="disabled")
+        self.open_btn.configure(state="disabled")
+        self.last_output_dir = None
+        self.last_barcodes_dir = None
+
         self.status_var.set("Procesando…")
         self._append_log("== Iniciando generación ==")
 
@@ -198,6 +230,19 @@ class BarcodeApp(tk.Tk):
         self._append_log(f"Delimitador usado: {result.delimiter}")
         self._append_log(f"Generados: {result.generated}")
 
+        # Guardar rutas para abrir carpeta
+        self.last_output_dir = result.outdir
+        self.last_barcodes_dir = getattr(result, "barcodes_dir", None)
+
+        self._append_log(f"Salida: {result.outdir}")
+        if getattr(result, "barcodes_dir", None):
+            self._append_log(f"Barcodes: {result.barcodes_dir}")
+        if getattr(result, "log_file", None):
+            self._append_log(f"Log: {result.log_file}")
+        if getattr(result, "errors_csv", None):
+            self._append_log(f"Errors CSV: {result.errors_csv}")
+
+
         if result.errors:
             self._append_log(f"Errores: {len(result.errors)}")
             self._append_log("--- Detalle ---")
@@ -208,6 +253,8 @@ class BarcodeApp(tk.Tk):
 
         self.status_var.set("Listo.")
         self.run_btn.configure(state="normal")
+        self.open_btn.configure(state="normal")
+
         messagebox.showinfo("Completado", f"Generados: {result.generated}\nErrores: {len(result.errors)}")
 
     def _on_error(self, e: Exception):
