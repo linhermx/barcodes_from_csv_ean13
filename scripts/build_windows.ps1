@@ -22,6 +22,7 @@ pyinstaller `
   --onefile `
   --windowed `
   --name barcode_tool `
+  --add-data "src\barcode_tool\resources\fonts\DejaVuSans.ttf;barcode_tool\resources\fonts" `
   barcode_tool_gui.py
 
 Write-Host "EXE generado en: dist\barcode_tool.exe"

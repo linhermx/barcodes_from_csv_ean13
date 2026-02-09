@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import csv
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,6 +32,17 @@ class RunResult:
     barcodes_dir: Path
     log_file: Path
     errors_csv: Path | None
+
+def resource_path(relative: str) -> Path:
+    """
+    Devuelve la ruta absoluta a un recurso, compatible con PyInstaller.
+    """
+    if hasattr(sys, "_MEIPASS"):
+        # PyInstaller extrae recursos a una carpeta temporal
+        base = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    else:
+        base = Path(__file__).resolve().parent
+    return base / relative
 
 
 def sanitize_filename(name: str) -> str:
@@ -127,6 +139,7 @@ def generate_barcodes_from_csv(
     barcodes_dir.mkdir(parents=True, exist_ok=True)
     logs_dir.mkdir(parents=True, exist_ok=True)
 
+    font_file = resource_path("resources/fonts/DejaVuSans.ttf")
 
     writer_options = {
         "dpi": 300,
@@ -146,6 +159,10 @@ def generate_barcodes_from_csv(
         "background": "white",
         "foreground": "black",
     }
+
+    # Solo si queremos texto
+    if not no_text:
+        writer_options["font_path"] = str(font_file)                    
 
     EAN13 = get_barcode_class("ean13")
 
