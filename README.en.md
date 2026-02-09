@@ -1,5 +1,11 @@
 # barcodes_from_csv_ean13
 
+# barcodes_from_csv_ean13
+
+![GitHub release](https://img.shields.io/github/v/release/linhermx/barcodes_from_csv_ean13)
+![Platform](https://img.shields.io/badge/platform-Windows-blue)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+
 EAN-13 **barcode generator** in **PNG** format from a **CSV** file, developed in Python.
 
 The system validates the check digit (checksum), generates images ready for **printing**, and names files using the **Clave** field as the main identifier.
@@ -175,3 +181,7 @@ Rules:
 3. Review generated barcodes
 4. Check logs if errors occur
 5. Print or integrate into your system
+
+---
+
+📄 Leer en español: [README.md](README.md)

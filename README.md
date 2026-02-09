@@ -1,5 +1,9 @@
 # barcodes_from_csv_ean13
 
+![GitHub release](https://img.shields.io/github/v/release/linhermx/barcodes_from_csv_ean13)
+![Platform](https://img.shields.io/badge/platform-Windows-blue)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+
 Generador de códigos de barras **EAN-13** en formato **PNG** a partir de un archivo **CSV**, desarrollado en Python.
 
 El sistema valida el dígito de control (checksum), genera imágenes listas para **impresión** y nombra los archivos usando la **Clave** como identificador principal.
@@ -171,3 +175,7 @@ Reglas:
 3. Revisar resultados
 4. Ver logs si hay errores
 5. Imprimir o integrar al sistema
+
+---
+
+Read this in English: [README.en.md](README.en.md)
