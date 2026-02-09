@@ -27,3 +27,4 @@ salida/
 *.csv
 
 *.egg-info/
+*.spec
