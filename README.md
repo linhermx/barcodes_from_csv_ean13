@@ -153,7 +153,7 @@ Reglas:
 
 - / → _
 - Se eliminan caracteres inválidos
-- Se agrega _2, _3 si hay colisión
+- Se agrega `_2`, `_3` si hay colisión
 
 ---
 
