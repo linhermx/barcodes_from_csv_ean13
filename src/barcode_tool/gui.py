@@ -1,4 +1,5 @@
 from __future__ import annotations
+from barcode_tool import __version__
 
 import os
 import subprocess
@@ -13,7 +14,7 @@ from .core import generate_barcodes_from_csv
 class BarcodeApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Generador de Códigos de Barras EAN-13")
+        self.title(f"Generador de Códigos de Barras EAN-13 (v{__version__})")
         self.geometry("900x560")
         self.minsize(860, 540)
 
