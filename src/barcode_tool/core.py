@@ -33,17 +33,15 @@ class RunResult:
     log_file: Path
     errors_csv: Path | None
 
-def resource_path(relative: str) -> Path:
+def resource_path(*parts: str) -> Path:
     """
     Devuelve la ruta absoluta a un recurso, compatible con PyInstaller.
     """
-    if hasattr(sys, "_MEIPASS"):
-        # PyInstaller extrae recursos a una carpeta temporal
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         base = Path(sys._MEIPASS)  # type: ignore[attr-defined]
     else:
         base = Path(__file__).resolve().parent
-    return base / relative
-
+    return base.joinpath(*parts)
 
 def sanitize_filename(name: str) -> str:
     s = "" if name is None else str(name).strip()
@@ -139,7 +137,10 @@ def generate_barcodes_from_csv(
     barcodes_dir.mkdir(parents=True, exist_ok=True)
     logs_dir.mkdir(parents=True, exist_ok=True)
 
-    font_file = resource_path("resources/fonts/DejaVuSans.ttf")
+    font_file = resource_path("resources", "fonts", "DejaVuSans.ttf")
+
+    if not no_text and not font_file.exists():
+        raise RuntimeError(f"Font not found: {font_file}")
 
     writer_options = {
         "dpi": 300,
