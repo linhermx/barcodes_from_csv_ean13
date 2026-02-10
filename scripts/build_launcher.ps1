@@ -18,6 +18,7 @@ pyinstaller `
   --clean `
   --onefile `
   --windowed `
+  --icon src\barcode_tool\resources\icon.ico `
   --name barcode_tool_launcher `
   barcode_tool_launcher.py
 
