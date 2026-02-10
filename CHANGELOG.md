@@ -6,6 +6,23 @@ This project follows **Semantic Versioning** (`MAJOR.MINOR.PATCH`).
 
 ---
 
+## [v1.2.1] – UI & Icon Polish
+
+### Added
+- Custom Windows application icon (`icon.ico`)
+- Custom launcher icon for better desktop identification
+
+### Changed
+- Improved consistency in Windows executable naming
+- Minor UI and visual polish across the application
+
+### Notes
+- No functional changes
+- No changes to update or launcher logic
+- Fully backward compatible with v1.2.0
+
+---
+
 ## [v1.2.0] - Launcher & Update System
 
 ### Added
