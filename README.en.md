@@ -52,9 +52,11 @@ Includes:
 2. The launcher:
    - Checks for a newer version
    - Asks whether you want to update
+   - Stores its internal files under `%LOCALAPPDATA%\LINHER\BarcodeTool`
 3. Accept, and the system updates automatically
 
 After that, the main application opens.
+Users should always launch the tool through `barcode_tool_launcher.exe`; internal files are managed automatically.
 
 ---
 

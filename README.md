@@ -50,9 +50,11 @@ Incluye:
 2. El launcher:
    - Revisa si hay una versión más reciente
    - Pregunta si deseas actualizar
+   - Guarda sus archivos internos en `%LOCALAPPDATA%\LINHER\BarcodeTool`
 3. Acepta y el sistema se actualiza automáticamente
 
 Después se abre la aplicación principal.
+Siempre debes abrir `barcode_tool_launcher.exe`; los archivos internos se administran automáticamente.
 
 ---
 
