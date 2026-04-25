@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -24,6 +25,13 @@ def base_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent
+
+
+def runtime_root() -> Path:
+    local_appdata = os.getenv("LOCALAPPDATA")
+    if local_appdata:
+        return Path(local_appdata) / "LINHER" / "BarcodeTool"
+    return Path.home() / "AppData" / "Local" / "LINHER" / "BarcodeTool"
 
 
 def ensure_dirs(root: Path) -> dict[str, Path]:
@@ -106,8 +114,7 @@ def run_app(exe_path: Path) -> None:
 
 
 def main() -> None:
-    root = base_dir()
-    dirs = ensure_dirs(root)
+    dirs = ensure_dirs(runtime_root())
 
     tk_root = tk.Tk()
     tk_root.withdraw()
