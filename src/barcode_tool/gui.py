@@ -1,8 +1,10 @@
 from __future__ import annotations
 from barcode_tool import __version__
 
+import ctypes
 import os
 import subprocess
+import sys
 import threading
 from pathlib import Path
 import tkinter as tk
@@ -14,6 +16,7 @@ from .core import generate_barcodes_from_csv
 class BarcodeApp(tk.Tk):
     def __init__(self):
         super().__init__()
+        self._configure_window_identity()
         self.title(f"Generador de Códigos de Barras EAN-13 (v{__version__})")
         self.geometry("900x560")
         self.minsize(860, 540)
@@ -31,6 +34,26 @@ class BarcodeApp(tk.Tk):
 
         self._apply_style()
         self._build_ui()
+
+    def _configure_window_identity(self):
+        if os.name == "nt":
+            try:
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("LINHER.BarcodeTool")
+            except Exception:
+                pass
+
+        icon_path = self._resource_path("icon.ico")
+        if icon_path.exists():
+            try:
+                self.iconbitmap(default=str(icon_path))
+            except Exception:
+                pass
+
+    def _resource_path(self, relative_name: str) -> Path:
+        if getattr(sys, "frozen", False):
+            bundle_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+            return bundle_dir / "resources" / relative_name
+        return Path(__file__).resolve().parent / "resources" / relative_name
 
     def _apply_style(self):
         style = ttk.Style(self)

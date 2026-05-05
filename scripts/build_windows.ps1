@@ -27,6 +27,7 @@ pyinstaller `
   --windowed `
   --icon src\barcode_tool\resources\icon.ico `
   --name barcode_tool_windows `
+  --add-data "src\barcode_tool\resources\icon.ico;resources" `
   --add-data "src\barcode_tool\resources\fonts\DejaVuSans.ttf;resources\fonts" `
   barcode_tool_gui.py
 
