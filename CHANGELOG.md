@@ -6,6 +6,22 @@ This project follows **Semantic Versioning** (`MAJOR.MINOR.PATCH`).
 
 ---
 
+## [v1.2.2] - Runtime Storage & Icon Visibility
+
+### Fixed
+- GUI window now applies the configured application icon at runtime
+- Packaged Windows app now bundles the icon resource required by the Tkinter window
+
+### Changed
+- Launcher runtime files are stored under `%LOCALAPPDATA%\LINHER\BarcodeTool`
+- End users no longer see `app/`, `downloads/`, and `logs/` folders next to the launcher
+
+### Notes
+- Users should keep launching `barcode_tool_launcher.exe`
+- This release improves the desktop experience without changing barcode generation logic
+
+---
+
 ## [v1.2.1] – UI & Icon Polish
 
 ### Added
